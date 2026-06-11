@@ -132,8 +132,20 @@
       color: #6b7280;
     }
   </style>
+  <link rel="stylesheet" href="theme.css" />
 </head>
 <body>
+  <nav class="app-toolbar" aria-label="Navegacao principal">
+    <a class="app-brand" href="index.html">
+      <span class="brand-mark">S</span>
+      <span>Sistemas Soften</span>
+    </a>
+    <div class="toolbar-actions">
+      <a class="menu-link" href="index.html">Menu</a>
+      <button class="theme-toggle" type="button" data-theme-toggle>Tema escuro</button>
+    </div>
+  </nav>
+
   <div class="container">
     <h1>Somador de Peso de XMLs</h1>
     <p>
@@ -341,5 +353,6 @@
       document.getElementById("resultadoTabela").innerHTML = "";
     }
   </script>
+  <script src="theme.js"></script>
 </body>
 </html>

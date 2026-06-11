@@ -183,9 +183,21 @@
       font-size: 13px;
     }
   </style>
+  <link rel="stylesheet" href="theme.css" />
 </head>
 
 <body>
+  <nav class="app-toolbar" aria-label="Navegacao principal">
+    <a class="app-brand" href="index.html">
+      <span class="brand-mark">S</span>
+      <span>Sistemas Soften</span>
+    </a>
+    <div class="toolbar-actions">
+      <a class="menu-link" href="index.html">Menu</a>
+      <button class="theme-toggle" type="button" data-theme-toggle>Tema escuro</button>
+    </div>
+  </nav>
+
   <header>
     <h1>Gerador de Relatório PDF</h1>
     <p>Importe um arquivo Excel e gere um relatório em PDF com as colunas da planilha.</p>
@@ -538,5 +550,6 @@
       doc.save(fileName);
     }
   </script>
+  <script src="theme.js"></script>
 </body>
 </html>
