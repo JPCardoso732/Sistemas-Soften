@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistemas Soften</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #f4f6f8;
+      color: #1f2933;
+    }
+
+    header {
+      background: #1f4e79;
+      color: #ffffff;
+      padding: 30px 18px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 30px;
+    }
+
+    header p {
+      margin: 8px auto 0;
+      max-width: 720px;
+      font-size: 16px;
+      opacity: 0.94;
+    }
+
+    main {
+      width: min(960px, calc(100% - 32px));
+      margin: 34px auto;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 16px;
+    }
+
+    a {
+      display: block;
+      min-height: 132px;
+      padding: 22px;
+      border: 1px solid #d9e2ec;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #1f2933;
+      text-decoration: none;
+      box-shadow: 0 6px 18px rgba(31, 78, 121, 0.08);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+
+    a:hover,
+    a:focus {
+      border-color: #1f4e79;
+      box-shadow: 0 10px 24px rgba(31, 78, 121, 0.14);
+      transform: translateY(-2px);
+      outline: none;
+    }
+
+    strong {
+      display: block;
+      margin-bottom: 10px;
+      color: #153957;
+      font-size: 18px;
+    }
+
+    span {
+      display: block;
+      color: #52616f;
+      line-height: 1.45;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Sistemas Soften</h1>
+    <p>Escolha abaixo o sistema que deseja abrir.</p>
+  </header>
+
+  <main>
+    <section class="grid" aria-label="Lista de sistemas">
+      <a href="Conversor%20Clientes.html">
+        <strong>Conversor Clientes</strong>
+        <span>Organiza planilhas de clientes para importacao.</span>
+      </a>
+
+      <a href="Conversor%20Produtos.html">
+        <strong>Conversor Produtos</strong>
+        <span>Organiza planilhas de produtos para importacao.</span>
+      </a>
+
+      <a href="Gerar%20Relat%C3%B3rio%20de%20Excel%20em%20PDF.html">
+        <strong>Relatorio Excel em PDF</strong>
+        <span>Gera relatorios em PDF a partir de arquivos Excel.</span>
+      </a>
+
+      <a href="Somador%20de%20Peso%20NFe.html">
+        <strong>Somador de Peso NFe</strong>
+        <span>Soma pesos de arquivos XML de notas fiscais.</span>
+      </a>
+    </section>
+  </main>
+</body>
+</html>
