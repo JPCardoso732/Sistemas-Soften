@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Somador de Peso de XMLs</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #f4f6f8;
+      color: #1f2937;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      background: #ffffff;
+      padding: 28px;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 26px;
+      color: #111827;
+    }
+
+    p {
+      color: #4b5563;
+      line-height: 1.5;
+    }
+
+    .upload-box {
+      border: 2px dashed #9ca3af;
+      border-radius: 12px;
+      padding: 28px;
+      text-align: center;
+      background: #f9fafb;
+      margin: 20px 0;
+    }
+
+    input[type="file"] {
+      margin-top: 12px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 11px 16px;
+      cursor: pointer;
+      font-weight: 600;
+      background: #2563eb;
+      color: white;
+    }
+
+    button.secondary {
+      background: #374151;
+    }
+
+    button.danger {
+      background: #dc2626;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin: 22px 0;
+    }
+
+    .card {
+      background: #f3f4f6;
+      padding: 18px;
+      border-radius: 10px;
+    }
+
+    .card span {
+      display: block;
+      color: #6b7280;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .card strong {
+      font-size: 26px;
+      color: #111827;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 18px;
+      font-size: 14px;
+    }
+
+    th, td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background: #f9fafb;
+      color: #374151;
+    }
+
+    .erro {
+      color: #dc2626;
+      font-weight: 600;
+    }
+
+    .ok {
+      color: #047857;
+      font-weight: 600;
+    }
+
+    .small {
+      font-size: 13px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Somador de Peso de XMLs</h1>
+    <p>
+      Importe vários XMLs de notas em lote. O sistema irá procurar automaticamente os campos de peso
+      mais comuns, como <strong>pesoB</strong> e <strong>pesoL</strong>, e somar o peso total.
+    </p>
+
+    <div class="upload-box">
+      <strong>Selecione os arquivos XML</strong><br />
+      <input type="file" id="xmlFiles" accept=".xml,text/xml" multiple />
+      <p class="small">Você pode selecionar vários arquivos de uma vez.</p>
+    </div>
+
+    <div class="actions">
+      <button onclick="processarXMLs()">Processar XMLs</button>
+      <button class="secondary" onclick="exportarCSV()">Exportar CSV</button>
+      <button class="danger" onclick="limpar()">Limpar</button>
+    </div>
+
+    <div class="summary">
+      <div class="card">
+        <span>Arquivos processados</span>
+        <strong id="qtdArquivos">0</strong>
+      </div>
+      <div class="card">
+        <span>Peso bruto total</span>
+        <strong id="pesoBrutoTotal">0,000 kg</strong>
+      </div>
+      <div class="card">
+        <span>Peso líquido total</span>
+        <strong id="pesoLiquidoTotal">0,000 kg</strong>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Arquivo</th>
+          <th>Número da nota</th>
+          <th>Peso bruto</th>
+          <th>Peso líquido</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="resultadoTabela"></tbody>
+    </table>
+  </div>
+
+  <script>
+    let resultados = [];
+
+    function formatarPeso(valor) {
+      return valor.toLocaleString("pt-BR", {
+        minimumFractionDigits: 3,
+        maximumFractionDigits: 3
+      }) + " kg";
+    }
+
+    function textoTag(xml, tag) {
+      const item = xml.getElementsByTagName(tag)[0];
+      return item ? item.textContent.trim() : "";
+    }
+
+    function numeroBR(valor) {
+      if (!valor) return 0;
+      return parseFloat(valor.replace(",", ".")) || 0;
+    }
+
+    function lerArquivoComoTexto(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = () => reject(new Error("Erro ao ler arquivo"));
+        reader.readAsText(file);
+      });
+    }
+
+    async function processarXMLs() {
+      const input = document.getElementById("xmlFiles");
+      const files = Array.from(input.files);
+
+      if (files.length === 0) {
+        alert("Selecione pelo menos um arquivo XML.");
+        return;
+      }
+
+      resultados = [];
+      let pesoBrutoTotal = 0;
+      let pesoLiquidoTotal = 0;
+
+      for (const file of files) {
+        try {
+          const conteudo = await lerArquivoComoTexto(file);
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(conteudo, "text/xml");
+
+          const erroParser = xml.getElementsByTagName("parsererror");
+          if (erroParser.length > 0) {
+            resultados.push({
+              arquivo: file.name,
+              numeroNota: "-",
+              pesoBruto: 0,
+              pesoLiquido: 0,
+              status: "XML inválido"
+            });
+            continue;
+          }
+
+          const numeroNota = textoTag(xml, "nNF") || textoTag(xml, "nCT") || "-";
+
+          // NF-e geralmente usa pesoB e pesoL dentro de <transp><vol>.
+          // CT-e e outros modelos podem variar, então deixamos fallback simples.
+          const pesoBruto = numeroBR(textoTag(xml, "pesoB") || textoTag(xml, "qCarga"));
+          const pesoLiquido = numeroBR(textoTag(xml, "pesoL"));
+
+          pesoBrutoTotal += pesoBruto;
+          pesoLiquidoTotal += pesoLiquido;
+
+          resultados.push({
+            arquivo: file.name,
+            numeroNota,
+            pesoBruto,
+            pesoLiquido,
+            status: pesoBruto || pesoLiquido ? "OK" : "Peso não encontrado"
+          });
+        } catch (e) {
+          resultados.push({
+            arquivo: file.name,
+            numeroNota: "-",
+            pesoBruto: 0,
+            pesoLiquido: 0,
+            status: "Erro ao processar"
+          });
+        }
+      }
+
+      atualizarTela(pesoBrutoTotal, pesoLiquidoTotal);
+    }
+
+    function atualizarTela(pesoBrutoTotal, pesoLiquidoTotal) {
+      document.getElementById("qtdArquivos").textContent = resultados.length;
+      document.getElementById("pesoBrutoTotal").textContent = formatarPeso(pesoBrutoTotal);
+      document.getElementById("pesoLiquidoTotal").textContent = formatarPeso(pesoLiquidoTotal);
+
+      const tbody = document.getElementById("resultadoTabela");
+      tbody.innerHTML = "";
+
+      resultados.forEach(item => {
+        const tr = document.createElement("tr");
+        const statusClasse = item.status === "OK" ? "ok" : "erro";
+
+        tr.innerHTML = `
+          <td>${item.arquivo}</td>
+          <td>${item.numeroNota}</td>
+          <td>${formatarPeso(item.pesoBruto)}</td>
+          <td>${formatarPeso(item.pesoLiquido)}</td>
+          <td class="${statusClasse}">${item.status}</td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function exportarCSV() {
+      if (resultados.length === 0) {
+        alert("Processe os XMLs antes de exportar.");
+        return;
+      }
+
+      const linhas = [
+        ["Arquivo", "Numero da nota", "Peso bruto", "Peso liquido", "Status"]
+      ];
+
+      resultados.forEach(item => {
+        linhas.push([
+          item.arquivo,
+          item.numeroNota,
+          item.pesoBruto.toString().replace(".", ","),
+          item.pesoLiquido.toString().replace(".", ","),
+          item.status
+        ]);
+      });
+
+      const csv = linhas.map(linha =>
+        linha.map(campo => `"${String(campo).replace(/"/g, '""')}"`).join(";")
+      ).join("\n");
+
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+
+      a.href = url;
+      a.download = "resultado_pesos_xml.csv";
+      a.click();
+
+      URL.revokeObjectURL(url);
+    }
+
+    function limpar() {
+      document.getElementById("xmlFiles").value = "";
+      resultados = [];
+      document.getElementById("qtdArquivos").textContent = "0";
+      document.getElementById("pesoBrutoTotal").textContent = "0,000 kg";
+      document.getElementById("pesoLiquidoTotal").textContent = "0,000 kg";
+      document.getElementById("resultadoTabela").innerHTML = "";
+    }
+  </script>
+</body>
+</html>

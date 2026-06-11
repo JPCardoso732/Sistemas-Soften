@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador de Relatório PDF a partir de Excel</title>
+
+  <!-- Bibliotecas via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #f3f5f7;
+      color: #222;
+    }
+
+    header {
+      background: #1f4e79;
+      color: white;
+      padding: 24px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 26px;
+    }
+
+    header p {
+      margin: 8px 0 0;
+      opacity: 0.9;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    input,
+    select,
+    button {
+      width: 100%;
+      padding: 11px;
+      border-radius: 8px;
+      border: 1px solid #cfd6dd;
+      font-size: 15px;
+    }
+
+    button {
+      background: #1f4e79;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #163956;
+    }
+
+    button.secondary {
+      background: #4d6f8f;
+    }
+
+    button:disabled {
+      background: #9aa9b6;
+      cursor: not-allowed;
+    }
+
+    .columns-box {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .column-item {
+      background: #f8fafc;
+      border: 1px solid #dbe2ea;
+      border-radius: 8px;
+      padding: 8px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .column-item input {
+      width: auto;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      margin-top: 16px;
+      border: 1px solid #dbe2ea;
+      border-radius: 8px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 700px;
+      background: white;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #e5eaf0;
+      padding: 9px;
+      text-align: left;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #edf3f8;
+      font-weight: bold;
+    }
+
+    .info {
+      background: #eaf4ff;
+      color: #17486e;
+      border-left: 4px solid #1f4e79;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 12px;
+    }
+
+    .error {
+      background: #ffecec;
+      color: #8a1f1f;
+      border-left: 4px solid #c9302c;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .actions button {
+      flex: 1;
+      min-width: 180px;
+    }
+
+    footer {
+      text-align: center;
+      color: #667;
+      padding: 24px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Gerador de Relatório PDF</h1>
+    <p>Importe um arquivo Excel e gere um relatório em PDF com as colunas da planilha.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>1. Importar Excel</h2>
+
+      <div class="grid">
+        <div>
+          <label for="excelFile">Arquivo .xlsx ou .xls</label>
+          <input type="file" id="excelFile" accept=".xlsx,.xls" />
+        </div>
+
+        <div>
+          <label for="sheetSelect">Aba da planilha</label>
+          <select id="sheetSelect" disabled>
+            <option value="">Selecione uma aba</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="message" class="info">
+        Selecione um arquivo Excel para carregar os dados.
+      </div>
+
+      <div id="errorMessage" class="error"></div>
+    </section>
+
+    <section class="card" id="configSection" style="display: none;">
+      <h2>2. Configurar Relatório</h2>
+
+      <div class="grid">
+        <div>
+          <label for="reportTitle">Título do relatório</label>
+          <input type="text" id="reportTitle" value="Relatório gerado a partir do Excel" />
+        </div>
+
+        <div>
+          <label for="fileName">Nome do arquivo PDF</label>
+          <input type="text" id="fileName" value="relatorio_excel.pdf" />
+        </div>
+
+        <div>
+          <label for="orientation">Orientação do PDF</label>
+          <select id="orientation">
+            <option value="landscape">Paisagem</option>
+            <option value="portrait">Retrato</option>
+          </select>
+        </div>
+      </div>
+
+      <h3>Colunas do Excel</h3>
+      <p>Por padrão, todas as colunas são selecionadas. Desmarque as colunas que não deseja incluir no PDF.</p>
+
+      <div class="actions">
+        <button type="button" class="secondary" onclick="selecionarTodasColunas(true)">Selecionar todas</button>
+        <button type="button" class="secondary" onclick="selecionarTodasColunas(false)">Desmarcar todas</button>
+      </div>
+
+      <div id="columnsBox" class="columns-box"></div>
+    </section>
+
+    <section class="card" id="previewSection" style="display: none;">
+      <h2>3. Prévia dos Dados</h2>
+      <p id="previewInfo"></p>
+
+      <div class="table-wrapper">
+        <table id="previewTable"></table>
+      </div>
+    </section>
+
+    <section class="card" id="pdfSection" style="display: none;">
+      <h2>4. Gerar PDF</h2>
+
+      <div class="actions">
+        <button type="button" onclick="gerarPDF()">Gerar e Baixar PDF</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Sistema local em HTML, CSS e JavaScript. Os dados são processados no navegador.
+  </footer>
+
+  <script>
+    let workbook = null;
+    let currentData = [];
+    let currentHeaders = [];
+
+    const excelFile = document.getElementById("excelFile");
+    const sheetSelect = document.getElementById("sheetSelect");
+    const message = document.getElementById("message");
+    const errorMessage = document.getElementById("errorMessage");
+
+    excelFile.addEventListener("change", carregarExcel);
+    sheetSelect.addEventListener("change", carregarAbaSelecionada);
+
+    function mostrarErro(texto) {
+      errorMessage.style.display = "block";
+      errorMessage.textContent = texto;
+    }
+
+    function limparErro() {
+      errorMessage.style.display = "none";
+      errorMessage.textContent = "";
+    }
+
+    function carregarExcel(event) {
+      limparErro();
+
+      const file = event.target.files[0];
+
+      if (!file) {
+        return;
+      }
+
+      const extensoesPermitidas = ["xlsx", "xls"];
+      const extensao = file.name.split(".").pop().toLowerCase();
+
+      if (!extensoesPermitidas.includes(extensao)) {
+        mostrarErro("Formato inválido. Selecione um arquivo .xlsx ou .xls.");
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          workbook = XLSX.read(data, { type: "array" });
+
+          sheetSelect.innerHTML = "";
+
+          workbook.SheetNames.forEach((sheetName, index) => {
+            const option = document.createElement("option");
+            option.value = sheetName;
+            option.textContent = sheetName;
+            sheetSelect.appendChild(option);
+
+            if (index === 0) {
+              option.selected = true;
+            }
+          });
+
+          sheetSelect.disabled = false;
+          message.textContent = "Arquivo carregado com sucesso. Escolha a aba e confira a prévia.";
+          carregarAbaSelecionada();
+
+        } catch (error) {
+          mostrarErro("Não foi possível ler o arquivo Excel. Verifique se o arquivo está correto.");
+        }
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+
+    function carregarAbaSelecionada() {
+      limparErro();
+
+      if (!workbook || !sheetSelect.value) {
+        return;
+      }
+
+      const sheet = workbook.Sheets[sheetSelect.value];
+      const jsonData = XLSX.utils.sheet_to_json(sheet, {
+        defval: "",
+        raw: false
+      });
+
+      if (!jsonData.length) {
+        mostrarErro("A aba selecionada não possui dados para gerar relatório.");
+        return;
+      }
+
+      currentData = jsonData;
+      currentHeaders = Object.keys(jsonData[0]);
+
+      renderizarColunas();
+      renderizarPreview();
+
+      document.getElementById("configSection").style.display = "block";
+      document.getElementById("previewSection").style.display = "block";
+      document.getElementById("pdfSection").style.display = "block";
+    }
+
+    function renderizarColunas() {
+      const columnsBox = document.getElementById("columnsBox");
+      columnsBox.innerHTML = "";
+
+      currentHeaders.forEach((header, index) => {
+        const label = document.createElement("label");
+        label.className = "column-item";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.value = header;
+        checkbox.checked = true;
+        checkbox.id = `coluna_${index}`;
+        checkbox.addEventListener("change", renderizarPreview);
+
+        const span = document.createElement("span");
+        span.textContent = header;
+
+        label.appendChild(checkbox);
+        label.appendChild(span);
+        columnsBox.appendChild(label);
+      });
+    }
+
+    function selecionarTodasColunas(selecionar) {
+      const checkboxes = document.querySelectorAll("#columnsBox input[type='checkbox']");
+      checkboxes.forEach(checkbox => checkbox.checked = selecionar);
+      renderizarPreview();
+    }
+
+    function obterColunasSelecionadas() {
+      return Array.from(document.querySelectorAll("#columnsBox input[type='checkbox']:checked"))
+        .map(checkbox => checkbox.value);
+    }
+
+    function renderizarPreview() {
+      const selectedColumns = obterColunasSelecionadas();
+      const table = document.getElementById("previewTable");
+      const previewInfo = document.getElementById("previewInfo");
+
+      table.innerHTML = "";
+
+      previewInfo.textContent = `${currentData.length} registro(s) encontrado(s). Prévia exibindo até 20 linhas.`;
+
+      if (!selectedColumns.length) {
+        table.innerHTML = "<tr><td>Nenhuma coluna selecionada.</td></tr>";
+        return;
+      }
+
+      const thead = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+
+      selectedColumns.forEach(header => {
+        const th = document.createElement("th");
+        th.textContent = header;
+        headerRow.appendChild(th);
+      });
+
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+      const previewRows = currentData.slice(0, 20);
+
+      previewRows.forEach(row => {
+        const tr = document.createElement("tr");
+
+        selectedColumns.forEach(header => {
+          const td = document.createElement("td");
+          td.textContent = row[header] ?? "";
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+    }
+
+    function gerarPDF() {
+      limparErro();
+
+      const selectedColumns = obterColunasSelecionadas();
+
+      if (!currentData.length) {
+        mostrarErro("Importe um arquivo Excel antes de gerar o PDF.");
+        return;
+      }
+
+      if (!selectedColumns.length) {
+        mostrarErro("Selecione pelo menos uma coluna para gerar o PDF.");
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const orientation = document.getElementById("orientation").value;
+      const title = document.getElementById("reportTitle").value.trim() || "Relatório";
+      let fileName = document.getElementById("fileName").value.trim() || "relatorio_excel.pdf";
+
+      if (!fileName.toLowerCase().endsWith(".pdf")) {
+        fileName += ".pdf";
+      }
+
+      const doc = new jsPDF({
+        orientation: orientation,
+        unit: "mm",
+        format: "a4"
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      doc.setFontSize(15);
+      doc.text(title, pageWidth / 2, 14, { align: "center" });
+
+      doc.setFontSize(9);
+      doc.text(`Aba: ${sheetSelect.value}`, 14, 22);
+      doc.text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, 14, 27);
+      doc.text(`Total de registros: ${currentData.length}`, 14, 32);
+
+      const body = currentData.map(row => {
+        return selectedColumns.map(header => {
+          const value = row[header];
+
+          if (value === null || value === undefined) {
+            return "";
+          }
+
+          return String(value);
+        });
+      });
+
+      doc.autoTable({
+        head: [selectedColumns],
+        body: body,
+        startY: 38,
+        theme: "grid",
+        styles: {
+          fontSize: selectedColumns.length > 8 ? 6 : 8,
+          cellPadding: 2,
+          overflow: "linebreak"
+        },
+        headStyles: {
+          fillColor: [31, 78, 121],
+          textColor: 255
+        },
+        margin: {
+          top: 16,
+          left: 8,
+          right: 8
+        },
+        didDrawPage: function(data) {
+          const pageCount = doc.internal.getNumberOfPages();
+          const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
+          const pageHeight = doc.internal.pageSize.getHeight();
+
+          doc.setFontSize(8);
+          doc.text(`Página ${currentPage} de ${pageCount}`, pageWidth - 14, pageHeight - 8, {
+            align: "right"
+          });
+        }
+      });
+
+      doc.save(fileName);
+    }
+  </script>
+</body>
+</html>

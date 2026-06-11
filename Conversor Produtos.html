@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Organizador de Planilha para Importação</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #f4f6f8;
+      color: #1f2933;
+    }
+
+    header {
+      background: #1f4e79;
+      color: #fff;
+      padding: 26px 18px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    header p {
+      margin: 8px auto 0;
+      max-width: 900px;
+      opacity: 0.94;
+      font-size: 16px;
+    }
+
+    main {
+      max-width: 1240px;
+      margin: 24px auto;
+      padding: 0 16px 40px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 18px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 21px;
+      color: #173a5e;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    input,
+    select,
+    button {
+      width: 100%;
+      border: 1px solid #cfd8e3;
+      border-radius: 9px;
+      padding: 11px;
+      font-size: 15px;
+      background: #fff;
+    }
+
+    button {
+      border: 0;
+      background: #1f4e79;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #163956;
+    }
+
+    button.secondary {
+      background: #55708f;
+    }
+
+    button.light {
+      background: #e8eef5;
+      color: #173a5e;
+      border: 1px solid #cfd8e3;
+    }
+
+    button:disabled {
+      background: #a8b3bf;
+      cursor: not-allowed;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .actions button {
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .info,
+    .warn,
+    .error,
+    .success {
+      padding: 12px;
+      border-radius: 9px;
+      margin-top: 12px;
+      line-height: 1.42;
+    }
+
+    .info {
+      background: #eaf4ff;
+      border-left: 4px solid #1f4e79;
+      color: #164467;
+    }
+
+    .warn {
+      background: #fff7e6;
+      border-left: 4px solid #d97706;
+      color: #7a4a05;
+    }
+
+    .success {
+      background: #ecfdf3;
+      border-left: 4px solid #16a34a;
+      color: #166534;
+      display: none;
+    }
+
+    .error {
+      background: #ffecec;
+      border-left: 4px solid #b42318;
+      color: #841c15;
+      display: none;
+    }
+
+    .mapping-table,
+    .preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 920px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid #dbe2ea;
+      border-radius: 10px;
+      margin-top: 12px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #e6edf4;
+      padding: 9px;
+      text-align: left;
+      font-size: 13px;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #edf3f8;
+      color: #173a5e;
+      font-weight: 800;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    td select {
+      padding: 8px;
+      font-size: 13px;
+      min-width: 210px;
+    }
+
+    .checkbox-cell {
+      text-align: center;
+      width: 70px;
+    }
+
+    .checkbox-cell input {
+      width: auto;
+      transform: scale(1.15);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .ok {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .missing {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .manual {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .muted {
+      color: #667085;
+      font-size: 13px;
+    }
+
+    .small {
+      font-size: 12px;
+      color: #667085;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 13px;
+      color: #667085;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Organizador de Planilha para Importação</h1>
+    <p>Importe qualquer planilha, use a primeira linha como cabeçalho, confira o mapeamento das colunas e exporte um novo Excel no padrão do modelo.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>1. Importar planilha</h2>
+
+      <div class="grid">
+        <div>
+          <label for="fileInput">Arquivo de origem</label>
+          <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" />
+        </div>
+
+        <div>
+          <label for="sheetSelect">Aba da planilha</label>
+          <select id="sheetSelect" disabled>
+            <option value="">Selecione uma planilha</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="outputName">Nome do arquivo exportado</label>
+          <input id="outputName" type="text" value="planilha_organizada.xlsx" />
+        </div>
+      </div>
+
+      <div class="info">
+        Modelo usado para organização:
+        <strong>CÓDIGO DE BARRAS, SKU, DESCRIÇÃO, CATEGORIA, UNIDADE, NCM, CEST, PREÇO CUSTO, PREÇO VENDA e SALDO</strong>.
+      </div>
+
+      <div class="info">
+        Tratamentos automáticos:
+        quando a coluna <strong>UNIDADE</strong> não for encontrada na planilha importada, ela será preenchida automaticamente com <strong>UN</strong>;
+        quando a coluna <strong>NCM</strong> não for encontrada na planilha importada, ela será preenchida automaticamente com <strong>00000000</strong>;
+        quando encontrada, o <strong>NCM</strong> fica somente com números e no máximo 8 caracteres;
+        <strong>CEST</strong> fica somente com números e no máximo 7 caracteres;
+        <strong>PREÇO CUSTO</strong> e <strong>PREÇO VENDA</strong> são convertidos para moeda no formato brasileiro, exemplo: <strong>1.234,56</strong>.
+      </div>
+
+      <div id="success" class="success"></div>
+      <div id="error" class="error"></div>
+    </section>
+
+    <section id="mappingSection" class="card" style="display: none;">
+      <h2>2. Conferir e ajustar colunas</h2>
+
+      <p class="muted">
+        A primeira linha da planilha importada será considerada o cabeçalho. Depois disso, o sistema tenta encontrar automaticamente as colunas equivalentes. Quando alguma coluna não for encontrada, você pode selecionar manualmente a coluna de origem ou deixar em branco.
+      </p>
+
+      <div class="actions">
+        <button class="secondary" onclick="marcarTodas(true)">Selecionar todas</button>
+        <button class="secondary" onclick="marcarTodas(false)">Desmarcar todas</button>
+        <button class="light" onclick="refazerMapeamentoAutomatico()">Refazer mapeamento automático</button>
+      </div>
+
+      <div class="table-wrap">
+        <table class="mapping-table" id="mappingTable"></table>
+      </div>
+
+      <div id="mappingSummary" class="warn"></div>
+    </section>
+
+    <section id="previewSection" class="card" style="display: none;">
+      <h2>3. Prévia da planilha organizada</h2>
+      <p id="previewInfo" class="muted"></p>
+
+      <div class="table-wrap">
+        <table class="preview-table" id="previewTable"></table>
+      </div>
+    </section>
+
+    <section id="exportSection" class="card" style="display: none;">
+      <h2>4. Exportar Excel organizado</h2>
+
+      <div class="actions">
+        <button onclick="exportarExcel()">Exportar planilha organizada</button>
+      </div>
+
+      <div class="info">
+        As colunas exportadas sairão na mesma ordem do modelo. Colunas selecionadas sem correspondência serão exportadas vazias, exceto <strong>UNIDADE</strong>, que será preenchida com <strong>UN</strong>, e <strong>NCM</strong>, que será preenchida com <strong>00000000</strong>.
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Processamento local no navegador. Nenhum arquivo é enviado para servidor.
+  </footer>
+
+  <script>
+    const colunasModelo = [
+      {
+        nome: "CÓDIGO DE BARRAS",
+        aliases: [
+          "codigo de barras", "código de barras", "cod barras", "cod. barras",
+          "codigo barras", "codbarras", "ean", "gtin", "codigo", "código", "cod"
+        ]
+      },
+      {
+        nome: "SKU",
+        aliases: [
+          "sku", "codigo sku", "código sku", "cod sku", "cod. sku",
+          "referencia", "referência", "ref", "codigo interno", "código interno",
+          "cod interno", "cod. interno", "id produto", "idprod", "produto id"
+        ]
+      },
+      {
+        nome: "DESCRIÇÃO",
+        aliases: [
+          "descricao", "descrição", "produto", "nome", "nome produto",
+          "descricao produto", "descrição produto", "item"
+        ]
+      },
+      {
+        nome: "CATEGORIA",
+        aliases: [
+          "categoria", "grupo", "departamento", "familia", "família", "secao", "seção"
+        ]
+      },
+      {
+        nome: "UNIDADE",
+        aliases: [
+          "unidade", "un", "und", "unid", "medida", "unidade medida", "u.m", "um"
+        ]
+      },
+      {
+        nome: "NCM",
+        aliases: [
+          "ncm", "codigo ncm", "código ncm", "classificacao fiscal", "classificação fiscal"
+        ]
+      },
+      {
+        nome: "CEST",
+        aliases: [
+          "cest", "codigo cest", "código cest", "cod cest", "cod. cest"
+        ]
+      },
+      {
+        nome: "PREÇO CUSTO",
+        aliases: [
+          "preco custo", "preço custo", "custo", "valor custo", "vl custo",
+          "preco de custo", "preço de custo", "pr custo", "precocusto"
+        ]
+      },
+      {
+        nome: "PREÇO VENDA",
+        aliases: [
+          "preco venda", "preço venda", "venda", "valor venda", "vl venda",
+          "preco de venda", "preço de venda", "preco", "preço", "pr venda", "precovenda"
+        ]
+      },
+      {
+        nome: "SALDO",
+        aliases: [
+          "saldo", "estoque", "quantidade", "qtd", "qtde", "saldo estoque", "estoque atual"
+        ]
+      }
+    ];
+
+    let workbook = null;
+    let dadosOrigem = [];
+    let cabecalhosOrigem = [];
+    let mapping = {};
+
+    const fileInput = document.getElementById("fileInput");
+    const sheetSelect = document.getElementById("sheetSelect");
+    const errorBox = document.getElementById("error");
+    const successBox = document.getElementById("success");
+
+    fileInput.addEventListener("change", carregarArquivo);
+    sheetSelect.addEventListener("change", carregarAba);
+
+    function normalizar(texto) {
+      return String(texto || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toLowerCase()
+        .trim();
+    }
+
+    function limparSomenteNumeros(valor, tamanhoMaximo) {
+      return String(valor ?? "")
+        .replace(/\D/g, "")
+        .slice(0, tamanhoMaximo);
+    }
+
+    function formatarMoedaBR(valor) {
+      if (valor === null || valor === undefined) {
+        return "";
+      }
+
+      let texto = String(valor).trim();
+
+      if (texto === "") {
+        return "";
+      }
+
+      texto = texto
+        .replace(/R\$/gi, "")
+        .replace(/\s/g, "")
+        .trim();
+
+      let numero;
+
+      const temVirgula = texto.includes(",");
+      const temPonto = texto.includes(".");
+
+      if (temVirgula && temPonto) {
+        const ultimaVirgula = texto.lastIndexOf(",");
+        const ultimoPonto = texto.lastIndexOf(".");
+
+        if (ultimaVirgula > ultimoPonto) {
+          // Formato brasileiro: 1.234,56
+          numero = Number(texto.replace(/\./g, "").replace(",", "."));
+        } else {
+          // Formato americano: 1,234.56
+          numero = Number(texto.replace(/,/g, ""));
+        }
+      } else if (temVirgula) {
+        // Considera vírgula como separador decimal.
+        numero = Number(texto.replace(/\./g, "").replace(",", "."));
+      } else if (temPonto) {
+        const partes = texto.split(".");
+        const ultimaParte = partes[partes.length - 1];
+
+        if (ultimaParte.length === 2) {
+          // Exemplo: 1234.56
+          numero = Number(texto);
+        } else {
+          // Exemplo: 1.234 ou 12.345
+          numero = Number(texto.replace(/\./g, ""));
+        }
+      } else {
+        numero = Number(texto.replace(/[^\d-]/g, ""));
+      }
+
+      if (!isFinite(numero)) {
+        return "";
+      }
+
+      return numero.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function tratarValorPorColuna(nomeColuna, valor) {
+      if (nomeColuna === "NCM") {
+        return limparSomenteNumeros(valor, 8);
+      }
+
+      if (nomeColuna === "CEST") {
+        return limparSomenteNumeros(valor, 7);
+      }
+
+      if (nomeColuna === "PREÇO CUSTO" || nomeColuna === "PREÇO VENDA") {
+        return formatarMoedaBR(valor);
+      }
+
+      return valor ?? "";
+    }
+
+    function mostrarErro(msg) {
+      errorBox.style.display = "block";
+      errorBox.textContent = msg;
+      successBox.style.display = "none";
+      successBox.textContent = "";
+    }
+
+    function mostrarSucesso(msg) {
+      successBox.style.display = "block";
+      successBox.textContent = msg;
+      errorBox.style.display = "none";
+      errorBox.textContent = "";
+    }
+
+    function limparMensagens() {
+      errorBox.style.display = "none";
+      errorBox.textContent = "";
+      successBox.style.display = "none";
+      successBox.textContent = "";
+    }
+
+    function resetarTelaProcessamento() {
+      workbook = null;
+      dadosOrigem = [];
+      cabecalhosOrigem = [];
+      mapping = {};
+
+      sheetSelect.innerHTML = '<option value="">Selecione uma planilha</option>';
+      sheetSelect.disabled = true;
+
+      document.getElementById("mappingSection").style.display = "none";
+      document.getElementById("previewSection").style.display = "none";
+      document.getElementById("exportSection").style.display = "none";
+      document.getElementById("mappingTable").innerHTML = "";
+      document.getElementById("previewTable").innerHTML = "";
+    }
+
+    function carregarArquivo(event) {
+      limparMensagens();
+      resetarTelaProcessamento();
+
+      const file = event.target.files[0];
+
+      if (!file) {
+        return;
+      }
+
+      const extensao = file.name.split(".").pop().toLowerCase();
+
+      if (!["xlsx", "xls", "csv"].includes(extensao)) {
+        mostrarErro("Formato inválido. Selecione um arquivo .xlsx, .xls ou .csv.");
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        try {
+          if (extensao === "csv") {
+            const texto = e.target.result;
+            workbook = XLSX.read(texto, {
+              type: "string",
+              raw: false
+            });
+          } else {
+            const data = new Uint8Array(e.target.result);
+            workbook = XLSX.read(data, {
+              type: "array",
+              raw: false
+            });
+          }
+
+          if (!workbook || !workbook.SheetNames || !workbook.SheetNames.length) {
+            mostrarErro("Não foi possível localizar abas ou dados nesse arquivo.");
+            return;
+          }
+
+          sheetSelect.innerHTML = "";
+
+          workbook.SheetNames.forEach((name, index) => {
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = name || `Planilha ${index + 1}`;
+            if (index === 0) {
+              opt.selected = true;
+            }
+            sheetSelect.appendChild(opt);
+          });
+
+          sheetSelect.disabled = workbook.SheetNames.length <= 1;
+          carregarAba();
+
+        } catch (erro) {
+          console.error(erro);
+          mostrarErro("Não foi possível ler o arquivo. Verifique se a planilha está válida e tente novamente.");
+        }
+      };
+
+      reader.onerror = function() {
+        mostrarErro("Ocorreu um erro ao ler o arquivo selecionado.");
+      };
+
+      if (extensao === "csv") {
+        reader.readAsText(file, "UTF-8");
+      } else {
+        reader.readAsArrayBuffer(file);
+      }
+    }
+
+    function carregarAba() {
+      limparMensagens();
+
+      if (!workbook || !sheetSelect.value) {
+        return;
+      }
+
+      const sheet = workbook.Sheets[sheetSelect.value];
+
+      if (!sheet) {
+        mostrarErro("A aba selecionada não foi encontrada.");
+        return;
+      }
+
+      const linhasArray = XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        defval: "",
+        raw: false,
+        blankrows: false
+      });
+
+      if (!linhasArray.length) {
+        mostrarErro("A aba selecionada não possui dados.");
+        return;
+      }
+
+      // A primeira linha da planilha importada sempre será considerada o cabeçalho.
+      const indiceCabecalho = 0;
+
+      const cabecalhoBruto = linhasArray[indiceCabecalho].map(c => String(c || "").trim());
+      cabecalhosOrigem = gerarCabecalhosUnicos(cabecalhoBruto);
+
+      const linhasDados = linhasArray.slice(1);
+
+      dadosOrigem = linhasDados
+        .filter(linha => linha.some(valor => String(valor || "").trim() !== ""))
+        .map(linha => {
+          const obj = {};
+
+          cabecalhosOrigem.forEach((cab, index) => {
+            obj[cab] = linha[index] ?? "";
+          });
+
+          return obj;
+        });
+
+      const possuiCabecalhoValido = cabecalhosOrigem.some(cab => String(cab || "").trim() !== "");
+
+      if (!possuiCabecalhoValido) {
+        mostrarErro("A primeira linha da planilha está vazia. Ela precisa conter os nomes das colunas.");
+        return;
+      }
+
+      if (!dadosOrigem.length) {
+        mostrarErro("A planilha precisa ter pelo menos uma linha de dados abaixo do cabeçalho.");
+        return;
+      }
+
+      mapping = gerarMapeamentoAutomatico();
+
+      renderizarMapeamento();
+      renderizarPreview();
+
+      document.getElementById("mappingSection").style.display = "block";
+      document.getElementById("previewSection").style.display = "block";
+      document.getElementById("exportSection").style.display = "block";
+
+      mostrarSucesso(`Arquivo carregado com sucesso. A primeira linha foi usada como cabeçalho. Foram encontrados ${dadosOrigem.length} registro(s) e ${cabecalhosOrigem.length} coluna(s).`);
+    }
+
+    function encontrarLinhaCabecalho(linhasArray) {
+      let melhorIndice = -1;
+      let melhorPontuacao = -1;
+
+      const limite = Math.min(linhasArray.length, 15);
+
+      for (let i = 0; i < limite; i++) {
+        const linha = linhasArray[i] || [];
+        const preenchidas = linha.filter(valor => String(valor || "").trim() !== "").length;
+
+        if (preenchidas === 0) {
+          continue;
+        }
+
+        let pontuacao = preenchidas;
+
+        linha.forEach(valor => {
+          const texto = normalizar(valor);
+
+          colunasModelo.forEach(col => {
+            const candidatos = [col.nome, ...col.aliases].map(normalizar);
+            if (candidatos.includes(texto)) {
+              pontuacao += 5;
+            } else if (candidatos.some(alias => alias && (texto.includes(alias) || alias.includes(texto)))) {
+              pontuacao += 2;
+            }
+          });
+        });
+
+        if (pontuacao > melhorPontuacao) {
+          melhorPontuacao = pontuacao;
+          melhorIndice = i;
+        }
+      }
+
+      return melhorIndice;
+    }
+
+    function gerarCabecalhosUnicos(cabecalhoBruto) {
+      const usados = {};
+      const resultado = [];
+
+      cabecalhoBruto.forEach((nome, index) => {
+        let base = String(nome || "").trim();
+
+        if (!base) {
+          base = `COLUNA ${index + 1}`;
+        }
+
+        if (!usados[base]) {
+          usados[base] = 1;
+          resultado.push(base);
+        } else {
+          usados[base]++;
+          resultado.push(`${base} (${usados[base]})`);
+        }
+      });
+
+      return resultado;
+    }
+
+    function gerarMapeamentoAutomatico() {
+      const mapa = {};
+      const usados = new Set();
+
+      colunasModelo.forEach(col => {
+        const candidatos = [col.nome, ...col.aliases].map(normalizar);
+        let encontrado = "";
+
+        for (const cab of cabecalhosOrigem) {
+          const normCab = normalizar(cab);
+
+          if (!usados.has(cab) && candidatos.includes(normCab)) {
+            encontrado = cab;
+            break;
+          }
+        }
+
+        if (!encontrado) {
+          for (const cab of cabecalhosOrigem) {
+            const normCab = normalizar(cab);
+            const achouPorTrecho = candidatos.some(alias => {
+              return alias && normCab && (normCab.includes(alias) || alias.includes(normCab));
+            });
+
+            if (!usados.has(cab) && achouPorTrecho) {
+              encontrado = cab;
+              break;
+            }
+          }
+        }
+
+        if (encontrado) {
+          usados.add(encontrado);
+        }
+
+        mapa[col.nome] = {
+          origem: encontrado,
+          selecionada: true,
+          automatico: !!encontrado
+        };
+      });
+
+      return mapa;
+    }
+
+    function refazerMapeamentoAutomatico() {
+      mapping = gerarMapeamentoAutomatico();
+      renderizarMapeamento();
+      renderizarPreview();
+    }
+
+    function renderizarMapeamento() {
+      const table = document.getElementById("mappingTable");
+      table.innerHTML = "";
+
+      const thead = document.createElement("thead");
+      thead.innerHTML = `
+        <tr>
+          <th>Exportar</th>
+          <th>Coluna do modelo</th>
+          <th>Coluna encontrada na planilha importada</th>
+          <th>Status</th>
+        </tr>
+      `;
+      table.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+
+      colunasModelo.forEach(col => {
+        const item = mapping[col.nome];
+        const tr = document.createElement("tr");
+
+        const tdCheck = document.createElement("td");
+        tdCheck.className = "checkbox-cell";
+
+        const check = document.createElement("input");
+        check.type = "checkbox";
+        check.checked = item.selecionada;
+        check.onchange = () => {
+          mapping[col.nome].selecionada = check.checked;
+          atualizarResumoMapeamento();
+          renderizarPreview();
+        };
+
+        tdCheck.appendChild(check);
+
+        const tdModelo = document.createElement("td");
+        tdModelo.innerHTML = `<strong>${col.nome}</strong><br><span class="small">Coluna padrão da planilha modelo</span>`;
+
+        const tdSelect = document.createElement("td");
+        const select = document.createElement("select");
+        select.innerHTML = `<option value="">-- Deixar em branco --</option>`;
+
+        cabecalhosOrigem.forEach(cab => {
+          const opt = document.createElement("option");
+          opt.value = cab;
+          opt.textContent = cab;
+
+          if (cab === item.origem) {
+            opt.selected = true;
+          }
+
+          select.appendChild(opt);
+        });
+
+        select.onchange = () => {
+          mapping[col.nome].origem = select.value;
+          mapping[col.nome].automatico = false;
+          renderizarMapeamento();
+          renderizarPreview();
+        };
+
+        tdSelect.appendChild(select);
+
+        const tdStatus = document.createElement("td");
+
+        if (item.origem && item.automatico) {
+          tdStatus.innerHTML = `<span class="badge ok">Encontrada automaticamente</span>`;
+        } else if (item.origem) {
+          tdStatus.innerHTML = `<span class="badge manual">Selecionada manualmente</span>`;
+        } else {
+          tdStatus.innerHTML = `<span class="badge missing">Não encontrada</span>`;
+        }
+
+        tr.appendChild(tdCheck);
+        tr.appendChild(tdModelo);
+        tr.appendChild(tdSelect);
+        tr.appendChild(tdStatus);
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      atualizarResumoMapeamento();
+    }
+
+    function atualizarResumoMapeamento() {
+      const total = colunasModelo.length;
+      const encontradas = colunasModelo.filter(c => mapping[c.nome] && mapping[c.nome].origem).length;
+      const selecionadas = colunasModelo.filter(c => mapping[c.nome] && mapping[c.nome].selecionada).length;
+
+      document.getElementById("mappingSummary").innerHTML =
+        `${encontradas} de ${total} colunas foram relacionadas. ${selecionadas} coluna(s) estão selecionadas para exportação.`;
+    }
+
+    function marcarTodas(valor) {
+      colunasModelo.forEach(col => {
+        mapping[col.nome].selecionada = valor;
+      });
+
+      renderizarMapeamento();
+      renderizarPreview();
+    }
+
+    function obterValorTratadoParaExportacao(row, nomeColuna) {
+      const origem = mapping[nomeColuna] ? mapping[nomeColuna].origem : "";
+
+      if (!origem && nomeColuna === "UNIDADE") {
+        return "UN";
+      }
+
+      if (!origem && nomeColuna === "NCM") {
+        return "00000000";
+      }
+
+      const valorOriginal = origem ? (row[origem] ?? "") : "";
+      return tratarValorPorColuna(nomeColuna, valorOriginal);
+    }
+
+    function montarDadosOrganizados() {
+      const colunasSelecionadas = colunasModelo.filter(col => mapping[col.nome].selecionada);
+
+      return dadosOrigem.map(row => {
+        const novo = {};
+
+        colunasSelecionadas.forEach(col => {
+          novo[col.nome] = obterValorTratadoParaExportacao(row, col.nome);
+        });
+
+        return novo;
+      });
+    }
+
+    function renderizarPreview() {
+      const tabela = document.getElementById("previewTable");
+      const info = document.getElementById("previewInfo");
+
+      tabela.innerHTML = "";
+
+      const colunasSelecionadas = colunasModelo.filter(col => mapping[col.nome].selecionada);
+
+      info.textContent =
+        `${dadosOrigem.length} registro(s) encontrados. Prévia exibindo até 20 linhas. Os tratamentos de Unidade, NCM, CEST e preços já aparecem aplicados aqui.`;
+
+      if (!colunasSelecionadas.length) {
+        tabela.innerHTML = `<tr><td>Nenhuma coluna selecionada para exportação.</td></tr>`;
+        return;
+      }
+
+      const thead = document.createElement("thead");
+      const trHead = document.createElement("tr");
+
+      colunasSelecionadas.forEach(col => {
+        const th = document.createElement("th");
+        th.textContent = col.nome;
+        trHead.appendChild(th);
+      });
+
+      thead.appendChild(trHead);
+      tabela.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+
+      dadosOrigem.slice(0, 20).forEach(row => {
+        const tr = document.createElement("tr");
+
+        colunasSelecionadas.forEach(col => {
+          const td = document.createElement("td");
+          td.textContent = obterValorTratadoParaExportacao(row, col.nome);
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+      });
+
+      tabela.appendChild(tbody);
+      atualizarResumoMapeamento();
+    }
+
+    function exportarExcel() {
+      limparMensagens();
+
+      if (!dadosOrigem.length) {
+        mostrarErro("Importe uma planilha antes de exportar.");
+        return;
+      }
+
+      const colunasSelecionadas = colunasModelo
+        .filter(col => mapping[col.nome].selecionada)
+        .map(col => col.nome);
+
+      if (!colunasSelecionadas.length) {
+        mostrarErro("Selecione pelo menos uma coluna para exportar.");
+        return;
+      }
+
+      let nomeArquivo = document.getElementById("outputName").value.trim() || "planilha_organizada.xlsx";
+
+      if (!nomeArquivo.toLowerCase().endsWith(".xlsx")) {
+        nomeArquivo += ".xlsx";
+      }
+
+      const dados = montarDadosOrganizados();
+      const ws = XLSX.utils.json_to_sheet(dados, {
+        header: colunasSelecionadas
+      });
+
+      ws["!cols"] = colunasSelecionadas.map(col => ({
+        wch: Math.max(14, col.length + 4)
+      }));
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Planilha Organizada");
+      XLSX.writeFile(wb, nomeArquivo);
+    }
+  </script>
+</body>
+</html>

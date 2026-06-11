@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Organizador de Planilha de Clientes</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #f4f6f8;
+      color: #1f2933;
+    }
+
+    header {
+      background: #1f4e79;
+      color: #fff;
+      padding: 26px 18px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    header p {
+      margin: 8px auto 0;
+      max-width: 980px;
+      opacity: 0.94;
+      font-size: 16px;
+    }
+
+    main {
+      max-width: 1320px;
+      margin: 24px auto;
+      padding: 0 16px 40px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 18px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 21px;
+      color: #173a5e;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    input,
+    select,
+    button {
+      width: 100%;
+      border: 1px solid #cfd8e3;
+      border-radius: 9px;
+      padding: 11px;
+      font-size: 15px;
+      background: #fff;
+    }
+
+    button {
+      border: 0;
+      background: #1f4e79;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #163956;
+    }
+
+    button.secondary {
+      background: #55708f;
+    }
+
+    button.light {
+      background: #e8eef5;
+      color: #173a5e;
+      border: 1px solid #cfd8e3;
+    }
+
+    button:disabled {
+      background: #a8b3bf;
+      cursor: not-allowed;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .actions button {
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .info,
+    .warn,
+    .error,
+    .success {
+      padding: 12px;
+      border-radius: 9px;
+      margin-top: 12px;
+      line-height: 1.42;
+    }
+
+    .info {
+      background: #eaf4ff;
+      border-left: 4px solid #1f4e79;
+      color: #164467;
+    }
+
+    .warn {
+      background: #fff7e6;
+      border-left: 4px solid #d97706;
+      color: #7a4a05;
+    }
+
+    .success {
+      background: #ecfdf3;
+      border-left: 4px solid #16a34a;
+      color: #166534;
+      display: none;
+    }
+
+    .error {
+      background: #ffecec;
+      border-left: 4px solid #b42318;
+      color: #841c15;
+      display: none;
+    }
+
+    .mapping-table,
+    .preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1120px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid #dbe2ea;
+      border-radius: 10px;
+      margin-top: 12px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #e6edf4;
+      padding: 9px;
+      text-align: left;
+      font-size: 13px;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #edf3f8;
+      color: #173a5e;
+      font-weight: 800;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    td select {
+      padding: 8px;
+      font-size: 13px;
+      min-width: 230px;
+    }
+
+    .checkbox-cell {
+      text-align: center;
+      width: 70px;
+    }
+
+    .checkbox-cell input {
+      width: auto;
+      transform: scale(1.15);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .ok {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .missing {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .manual {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .muted {
+      color: #667085;
+      font-size: 13px;
+    }
+
+    .small {
+      font-size: 12px;
+      color: #667085;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 13px;
+      color: #667085;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Organizador de Planilha de Clientes</h1>
+    <p>Importe qualquer planilha de clientes, use a primeira linha como cabeçalho, confira o mapeamento das colunas e exporte um novo Excel no padrão do modelo.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>1. Importar planilha</h2>
+
+      <div class="grid">
+        <div>
+          <label for="fileInput">Arquivo de origem</label>
+          <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" />
+        </div>
+
+        <div>
+          <label for="sheetSelect">Aba da planilha</label>
+          <select id="sheetSelect" disabled>
+            <option value="">Selecione uma planilha</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="outputName">Nome do arquivo exportado</label>
+          <input id="outputName" type="text" value="clientes_organizados.xlsx" />
+        </div>
+      </div>
+
+      <div class="info">
+        Modelo usado para organização:
+        <strong>RAZÃO SOCIAL, CNPJ, INSCRIÇÃO ESTADUAL, TIPO CONTRIBUINTE, TELEFONE, CELULAR, EMAIL, CEP, UF, CIDADE, IBGE, ENDEREÇO, NUMERO, BAIRRO e COMPLEMENTO</strong>.
+      </div>
+
+      <div class="info">
+        Tratamentos automáticos:
+        <strong>CNPJ</strong> também identifica CPF e aplica pontuação.
+        Quando a <strong>CIDADE</strong> vier com UF no final, como <strong>José Bonifácio - SP</strong> ou <strong>José Bonifácio (SP)</strong>, a cidade será limpa.
+        Se a coluna <strong>UF</strong> estiver vazia, a UF encontrada na cidade será usada para preencher a coluna UF.
+        A coluna <strong>TIPO CONTRIBUINTE</strong> será preenchida automaticamente: <strong>1</strong> quando for CNPJ com Inscrição Estadual preenchida, e <strong>9</strong> quando for CPF ou CNPJ sem Inscrição Estadual.
+        Quando a planilha importada <strong>não tiver coluna de NUMERO</strong> do endereço, a exportação preencherá a coluna <strong>NUMERO</strong> com <strong>.</strong>. Quando a coluna existir, será usado o número informado na planilha importada.
+      </div>
+
+      <div id="success" class="success"></div>
+      <div id="error" class="error"></div>
+    </section>
+
+    <section id="mappingSection" class="card" style="display: none;">
+      <h2>2. Conferir e ajustar colunas</h2>
+
+      <p class="muted">
+        A primeira linha da planilha importada será considerada o cabeçalho. Depois disso, o sistema tenta encontrar automaticamente as colunas equivalentes. Quando alguma coluna não for encontrada, você pode selecionar manualmente a coluna de origem ou deixar em branco.
+      </p>
+
+      <div class="actions">
+        <button class="secondary" onclick="marcarTodas(true)">Selecionar todas</button>
+        <button class="secondary" onclick="marcarTodas(false)">Desmarcar todas</button>
+        <button class="light" onclick="refazerMapeamentoAutomatico()">Refazer mapeamento automático</button>
+      </div>
+
+      <div class="table-wrap">
+        <table class="mapping-table" id="mappingTable"></table>
+      </div>
+
+      <div id="mappingSummary" class="warn"></div>
+    </section>
+
+    <section id="previewSection" class="card" style="display: none;">
+      <h2>3. Prévia da planilha organizada</h2>
+      <p id="previewInfo" class="muted"></p>
+
+      <div class="table-wrap">
+        <table class="preview-table" id="previewTable"></table>
+      </div>
+    </section>
+
+    <section id="exportSection" class="card" style="display: none;">
+      <h2>4. Exportar Excel organizado</h2>
+
+      <div class="actions">
+        <button onclick="exportarExcel()">Exportar planilha de clientes</button>
+      </div>
+
+      <div class="info">
+        As colunas exportadas sairão na mesma ordem do modelo. Colunas selecionadas sem correspondência serão exportadas vazias.
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Processamento local no navegador. Nenhum arquivo é enviado para servidor.
+  </footer>
+
+  <script>
+    const colunasModelo = [
+      {
+        nome: "RAZÃO SOCIAL",
+        aliases: [
+          "razao social", "razão social", "nome", "nome cliente", "cliente",
+          "nome razao", "nome razão", "empresa", "fantasia", "nome fantasia"
+        ]
+      },
+      {
+        nome: "CNPJ",
+        aliases: [
+          "cnpj", "cpf", "cpf cnpj", "cpf/cnpj", "cnpj cpf", "cnpj/cpf",
+          "documento", "doc", "documento cliente", "numero documento", "número documento",
+          "inscricao federal", "inscrição federal", "cpfcnpj"
+        ]
+      },
+      {
+        nome: "INSCRIÇÃO ESTADUAL",
+        aliases: [
+          "inscricao estadual", "inscrição estadual", "ie", "i.e", "insc estadual",
+          "insc. estadual", "rg", "identidade"
+        ]
+      },
+      {
+        nome: "TIPO CONTRIBUINTE",
+        aliases: [
+          "tipo contribuinte", "contribuinte", "ind ie", "indicador ie",
+          "indicador inscricao estadual", "indicador inscrição estadual",
+          "tipo ie", "tipo de contribuinte"
+        ]
+      },
+      {
+        nome: "TELEFONE",
+        aliases: [
+          "telefone", "fone", "tel", "telefone fixo", "fixo", "contato telefone"
+        ]
+      },
+      {
+        nome: "CELULAR",
+        aliases: [
+          "celular", "whatsapp", "telefone celular", "fone celular", "cel", "contato celular"
+        ]
+      },
+      {
+        nome: "EMAIL",
+        aliases: [
+          "email", "e-mail", "mail", "correio eletronico", "correio eletrônico"
+        ]
+      },
+      {
+        nome: "CEP",
+        aliases: [
+          "cep", "codigo postal", "código postal", "cep endereco", "cep endereço"
+        ]
+      },
+      {
+        nome: "UF",
+        aliases: [
+          "uf", "estado", "sigla estado", "unidade federativa"
+        ]
+      },
+      {
+        nome: "CIDADE",
+        aliases: [
+          "cidade", "municipio", "município", "localidade"
+        ]
+      },
+      {
+        nome: "IBGE",
+        aliases: [
+          "ibge", "codigo ibge", "código ibge", "cod ibge", "cod. ibge",
+          "codigo municipio", "código município", "codigo cidade", "código cidade"
+        ]
+      },
+      {
+        nome: "ENDEREÇO",
+        aliases: [
+          "endereco", "endereço", "logradouro", "rua", "avenida", "av", "endereco completo",
+          "endereço completo"
+        ]
+      },
+      {
+        nome: "NUMERO",
+        aliases: [
+          "numero", "número", "num", "nº", "n°", "numero endereco", "número endereço",
+          "numero do endereco", "número do endereço"
+        ]
+      },
+      {
+        nome: "BAIRRO",
+        aliases: [
+          "bairro", "distrito", "setor"
+        ]
+      },
+      {
+        nome: "COMPLEMENTO",
+        aliases: [
+          "complemento", "compl", "obs endereco", "observacao endereco", "observação endereço",
+          "referencia", "referência"
+        ]
+      }
+    ];
+
+    const ufsValidas = [
+      "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
+      "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
+      "SP", "SE", "TO"
+    ];
+
+    let workbook = null;
+    let dadosOrigem = [];
+    let cabecalhosOrigem = [];
+    let mapping = {};
+
+    const fileInput = document.getElementById("fileInput");
+    const sheetSelect = document.getElementById("sheetSelect");
+    const errorBox = document.getElementById("error");
+    const successBox = document.getElementById("success");
+
+    fileInput.addEventListener("change", carregarArquivo);
+    sheetSelect.addEventListener("change", carregarAba);
+
+    function normalizar(texto) {
+      return String(texto || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toLowerCase()
+        .trim();
+    }
+
+    function limparSomenteNumeros(valor) {
+      return String(valor ?? "").replace(/\D/g, "");
+    }
+
+    function formatarCpfCnpj(valor) {
+      const numeros = limparSomenteNumeros(valor);
+
+      if (!numeros) {
+        return "";
+      }
+
+      if (numeros.length <= 11) {
+        const cpf = numeros.padStart(11, "0").slice(-11);
+        return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+      }
+
+      const cnpj = numeros.padStart(14, "0").slice(-14);
+      return cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+    }
+
+    function calcularTipoContribuinte(valorDocumento, valorInscricaoEstadual) {
+      const documento = limparSomenteNumeros(valorDocumento);
+      const inscricaoEstadual = String(valorInscricaoEstadual ?? "").trim();
+
+      // Regra:
+      // CNPJ com Inscrição Estadual preenchida = 1
+      // CPF, ou CNPJ sem Inscrição Estadual = 9
+      if (documento.length > 11 && inscricaoEstadual !== "") {
+        return "1";
+      }
+
+      return "9";
+    }
+
+    function extrairCidadeEUf(valorCidade) {
+      let cidade = String(valorCidade ?? "").trim();
+      let ufExtraida = "";
+
+      if (!cidade) {
+        return { cidade: "", uf: "" };
+      }
+
+      // Exemplo: José Bonifácio (SP)
+      let matchParenteses = cidade.match(/\(([A-Za-z]{2})\)\s*$/);
+
+      if (matchParenteses) {
+        const uf = matchParenteses[1].toUpperCase();
+
+        if (ufsValidas.includes(uf)) {
+          ufExtraida = uf;
+          cidade = cidade.replace(/\s*\([A-Za-z]{2}\)\s*$/, "").trim();
+        }
+      }
+
+      // Exemplo: José Bonifácio - SP, José Bonifácio/SP ou José Bonifácio – SP
+      if (!ufExtraida) {
+        let matchTraco = cidade.match(/\s*[-–—/]\s*([A-Za-z]{2})\s*$/);
+
+        if (matchTraco) {
+          const uf = matchTraco[1].toUpperCase();
+
+          if (ufsValidas.includes(uf)) {
+            ufExtraida = uf;
+            cidade = cidade.replace(/\s*[-–—/]\s*[A-Za-z]{2}\s*$/, "").trim();
+          }
+        }
+      }
+
+      return {
+        cidade: cidade,
+        uf: ufExtraida
+      };
+    }
+
+    function formatarUf(valorUf) {
+      const uf = String(valorUf ?? "")
+        .trim()
+        .replace(/[^A-Za-z]/g, "")
+        .toUpperCase()
+        .slice(0, 2);
+
+      return ufsValidas.includes(uf) ? uf : uf;
+    }
+
+    function tratarValorPorColuna(nomeColuna, valor) {
+      if (nomeColuna === "CNPJ") {
+        return formatarCpfCnpj(valor);
+      }
+
+      if (nomeColuna === "UF") {
+        return formatarUf(valor);
+      }
+
+      if (nomeColuna === "CIDADE") {
+        return extrairCidadeEUf(valor).cidade;
+      }
+
+      return valor ?? "";
+    }
+
+    function mostrarErro(msg) {
+      errorBox.style.display = "block";
+      errorBox.textContent = msg;
+      successBox.style.display = "none";
+      successBox.textContent = "";
+    }
+
+    function mostrarSucesso(msg) {
+      successBox.style.display = "block";
+      successBox.textContent = msg;
+      errorBox.style.display = "none";
+      errorBox.textContent = "";
+    }
+
+    function limparMensagens() {
+      errorBox.style.display = "none";
+      errorBox.textContent = "";
+      successBox.style.display = "none";
+      successBox.textContent = "";
+    }
+
+    function resetarTelaProcessamento() {
+      workbook = null;
+      dadosOrigem = [];
+      cabecalhosOrigem = [];
+      mapping = {};
+
+      sheetSelect.innerHTML = '<option value="">Selecione uma planilha</option>';
+      sheetSelect.disabled = true;
+
+      document.getElementById("mappingSection").style.display = "none";
+      document.getElementById("previewSection").style.display = "none";
+      document.getElementById("exportSection").style.display = "none";
+      document.getElementById("mappingTable").innerHTML = "";
+      document.getElementById("previewTable").innerHTML = "";
+    }
+
+    function carregarArquivo(event) {
+      limparMensagens();
+      resetarTelaProcessamento();
+
+      const file = event.target.files[0];
+
+      if (!file) {
+        return;
+      }
+
+      const extensao = file.name.split(".").pop().toLowerCase();
+
+      if (!["xlsx", "xls", "csv"].includes(extensao)) {
+        mostrarErro("Formato inválido. Selecione um arquivo .xlsx, .xls ou .csv.");
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        try {
+          if (extensao === "csv") {
+            const texto = e.target.result;
+            workbook = XLSX.read(texto, {
+              type: "string",
+              raw: false
+            });
+          } else {
+            const data = new Uint8Array(e.target.result);
+            workbook = XLSX.read(data, {
+              type: "array",
+              raw: false
+            });
+          }
+
+          if (!workbook || !workbook.SheetNames || !workbook.SheetNames.length) {
+            mostrarErro("Não foi possível localizar abas ou dados nesse arquivo.");
+            return;
+          }
+
+          sheetSelect.innerHTML = "";
+
+          workbook.SheetNames.forEach((name, index) => {
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = name || `Planilha ${index + 1}`;
+            if (index === 0) {
+              opt.selected = true;
+            }
+            sheetSelect.appendChild(opt);
+          });
+
+          sheetSelect.disabled = workbook.SheetNames.length <= 1;
+          carregarAba();
+
+        } catch (erro) {
+          console.error(erro);
+          mostrarErro("Não foi possível ler o arquivo. Verifique se a planilha está válida e tente novamente.");
+        }
+      };
+
+      reader.onerror = function() {
+        mostrarErro("Ocorreu um erro ao ler o arquivo selecionado.");
+      };
+
+      if (extensao === "csv") {
+        reader.readAsText(file, "UTF-8");
+      } else {
+        reader.readAsArrayBuffer(file);
+      }
+    }
+
+    function carregarAba() {
+      limparMensagens();
+
+      if (!workbook || !sheetSelect.value) {
+        return;
+      }
+
+      const sheet = workbook.Sheets[sheetSelect.value];
+
+      if (!sheet) {
+        mostrarErro("A aba selecionada não foi encontrada.");
+        return;
+      }
+
+      const linhasArray = XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        defval: "",
+        raw: false,
+        blankrows: false
+      });
+
+      if (!linhasArray.length) {
+        mostrarErro("A aba selecionada não possui dados.");
+        return;
+      }
+
+      const cabecalhoBruto = linhasArray[0].map(c => String(c || "").trim());
+      cabecalhosOrigem = gerarCabecalhosUnicos(cabecalhoBruto);
+
+      const linhasDados = linhasArray.slice(1);
+
+      dadosOrigem = linhasDados
+        .filter(linha => linha.some(valor => String(valor || "").trim() !== ""))
+        .map(linha => {
+          const obj = {};
+
+          cabecalhosOrigem.forEach((cab, index) => {
+            obj[cab] = linha[index] ?? "";
+          });
+
+          return obj;
+        });
+
+      const possuiCabecalhoValido = cabecalhosOrigem.some(cab => String(cab || "").trim() !== "");
+
+      if (!possuiCabecalhoValido) {
+        mostrarErro("A primeira linha da planilha está vazia. Ela precisa conter os nomes das colunas.");
+        return;
+      }
+
+      if (!dadosOrigem.length) {
+        mostrarErro("A planilha precisa ter pelo menos uma linha de dados abaixo do cabeçalho.");
+        return;
+      }
+
+      mapping = gerarMapeamentoAutomatico();
+
+      renderizarMapeamento();
+      renderizarPreview();
+
+      document.getElementById("mappingSection").style.display = "block";
+      document.getElementById("previewSection").style.display = "block";
+      document.getElementById("exportSection").style.display = "block";
+
+      mostrarSucesso(`Arquivo carregado com sucesso. A primeira linha foi usada como cabeçalho. Foram encontrados ${dadosOrigem.length} registro(s) e ${cabecalhosOrigem.length} coluna(s).`);
+    }
+
+    function gerarCabecalhosUnicos(cabecalhoBruto) {
+      const usados = {};
+      const resultado = [];
+
+      cabecalhoBruto.forEach((nome, index) => {
+        let base = String(nome || "").trim();
+
+        if (!base) {
+          base = `COLUNA ${index + 1}`;
+        }
+
+        if (!usados[base]) {
+          usados[base] = 1;
+          resultado.push(base);
+        } else {
+          usados[base]++;
+          resultado.push(`${base} (${usados[base]})`);
+        }
+      });
+
+      return resultado;
+    }
+
+    function gerarMapeamentoAutomatico() {
+      const mapa = {};
+      const usados = new Set();
+
+      colunasModelo.forEach(col => {
+        const candidatos = [col.nome, ...col.aliases].map(normalizar);
+        let encontrado = "";
+
+        for (const cab of cabecalhosOrigem) {
+          const normCab = normalizar(cab);
+
+          if (!usados.has(cab) && candidatos.includes(normCab)) {
+            encontrado = cab;
+            break;
+          }
+        }
+
+        if (!encontrado) {
+          for (const cab of cabecalhosOrigem) {
+            const normCab = normalizar(cab);
+            const achouPorTrecho = candidatos.some(alias => {
+              return alias && normCab && (normCab.includes(alias) || alias.includes(normCab));
+            });
+
+            if (!usados.has(cab) && achouPorTrecho) {
+              encontrado = cab;
+              break;
+            }
+          }
+        }
+
+        if (encontrado) {
+          usados.add(encontrado);
+        }
+
+        mapa[col.nome] = {
+          origem: encontrado,
+          selecionada: true,
+          automatico: !!encontrado
+        };
+      });
+
+      return mapa;
+    }
+
+    function refazerMapeamentoAutomatico() {
+      mapping = gerarMapeamentoAutomatico();
+      renderizarMapeamento();
+      renderizarPreview();
+    }
+
+    function renderizarMapeamento() {
+      const table = document.getElementById("mappingTable");
+      table.innerHTML = "";
+
+      const thead = document.createElement("thead");
+      thead.innerHTML = `
+        <tr>
+          <th>Exportar</th>
+          <th>Coluna do modelo</th>
+          <th>Coluna encontrada na planilha importada</th>
+          <th>Status</th>
+        </tr>
+      `;
+      table.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+
+      colunasModelo.forEach(col => {
+        const item = mapping[col.nome];
+        const tr = document.createElement("tr");
+
+        const tdCheck = document.createElement("td");
+        tdCheck.className = "checkbox-cell";
+
+        const check = document.createElement("input");
+        check.type = "checkbox";
+        check.checked = item.selecionada;
+        check.onchange = () => {
+          mapping[col.nome].selecionada = check.checked;
+          atualizarResumoMapeamento();
+          renderizarPreview();
+        };
+
+        tdCheck.appendChild(check);
+
+        const tdModelo = document.createElement("td");
+        tdModelo.innerHTML = `<strong>${col.nome}</strong><br><span class="small">Coluna padrão da planilha modelo</span>`;
+
+        const tdSelect = document.createElement("td");
+        const select = document.createElement("select");
+        select.innerHTML = `<option value="">-- Deixar em branco --</option>`;
+
+        cabecalhosOrigem.forEach(cab => {
+          const opt = document.createElement("option");
+          opt.value = cab;
+          opt.textContent = cab;
+
+          if (cab === item.origem) {
+            opt.selected = true;
+          }
+
+          select.appendChild(opt);
+        });
+
+        select.onchange = () => {
+          mapping[col.nome].origem = select.value;
+          mapping[col.nome].automatico = false;
+          renderizarMapeamento();
+          renderizarPreview();
+        };
+
+        tdSelect.appendChild(select);
+
+        const tdStatus = document.createElement("td");
+
+        if (item.origem && item.automatico) {
+          tdStatus.innerHTML = `<span class="badge ok">Encontrada automaticamente</span>`;
+        } else if (item.origem) {
+          tdStatus.innerHTML = `<span class="badge manual">Selecionada manualmente</span>`;
+        } else {
+          tdStatus.innerHTML = `<span class="badge missing">Não encontrada</span>`;
+        }
+
+        tr.appendChild(tdCheck);
+        tr.appendChild(tdModelo);
+        tr.appendChild(tdSelect);
+        tr.appendChild(tdStatus);
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      atualizarResumoMapeamento();
+    }
+
+    function atualizarResumoMapeamento() {
+      const total = colunasModelo.length;
+      const encontradas = colunasModelo.filter(c => mapping[c.nome] && mapping[c.nome].origem).length;
+      const selecionadas = colunasModelo.filter(c => mapping[c.nome] && mapping[c.nome].selecionada).length;
+
+      document.getElementById("mappingSummary").innerHTML =
+        `${encontradas} de ${total} colunas foram relacionadas. ${selecionadas} coluna(s) estão selecionadas para exportação.`;
+    }
+
+    function marcarTodas(valor) {
+      colunasModelo.forEach(col => {
+        mapping[col.nome].selecionada = valor;
+      });
+
+      renderizarMapeamento();
+      renderizarPreview();
+    }
+
+    function obterValorOriginal(row, nomeColunaModelo) {
+      const origem = mapping[nomeColunaModelo] ? mapping[nomeColunaModelo].origem : "";
+      return origem ? (row[origem] ?? "") : "";
+    }
+
+    function montarDadosOrganizados() {
+      const colunasSelecionadas = colunasModelo.filter(col => mapping[col.nome].selecionada);
+
+      return dadosOrigem.map(row => {
+        const novo = {};
+
+        const cidadeOriginal = obterValorOriginal(row, "CIDADE");
+        const ufOriginal = obterValorOriginal(row, "UF");
+        const cidadeUf = extrairCidadeEUf(cidadeOriginal);
+
+        const documentoOriginal = obterValorOriginal(row, "CNPJ");
+        const inscricaoEstadualOriginal = obterValorOriginal(row, "INSCRIÇÃO ESTADUAL");
+
+        colunasSelecionadas.forEach(col => {
+          const valorOriginal = obterValorOriginal(row, col.nome);
+
+          if (col.nome === "CIDADE") {
+            novo[col.nome] = cidadeUf.cidade;
+          } else if (col.nome === "UF") {
+            const ufTratada = formatarUf(ufOriginal);
+            novo[col.nome] = ufTratada || cidadeUf.uf;
+          } else if (col.nome === "TIPO CONTRIBUINTE") {
+            novo[col.nome] = calcularTipoContribuinte(documentoOriginal, inscricaoEstadualOriginal);
+          } else if (col.nome === "NUMERO") {
+            const possuiColunaNumero = mapping[col.nome] && mapping[col.nome].origem;
+            novo[col.nome] = possuiColunaNumero ? tratarValorPorColuna(col.nome, valorOriginal) : ".";
+          } else {
+            novo[col.nome] = tratarValorPorColuna(col.nome, valorOriginal);
+          }
+        });
+
+        return novo;
+      });
+    }
+
+    function renderizarPreview() {
+      const tabela = document.getElementById("previewTable");
+      const info = document.getElementById("previewInfo");
+
+      tabela.innerHTML = "";
+
+      const colunasSelecionadas = colunasModelo.filter(col => mapping[col.nome].selecionada);
+
+      info.textContent =
+        `${dadosOrigem.length} registro(s) encontrados. Prévia exibindo até 20 linhas. Os tratamentos de CPF/CNPJ, cidade com UF, Tipo de Contribuinte e NUMERO com ponto quando a coluna não existir já aparecem aplicados aqui.`;
+
+      if (!colunasSelecionadas.length) {
+        tabela.innerHTML = `<tr><td>Nenhuma coluna selecionada para exportação.</td></tr>`;
+        return;
+      }
+
+      const dadosPreview = montarDadosOrganizados().slice(0, 20);
+
+      const thead = document.createElement("thead");
+      const trHead = document.createElement("tr");
+
+      colunasSelecionadas.forEach(col => {
+        const th = document.createElement("th");
+        th.textContent = col.nome;
+        trHead.appendChild(th);
+      });
+
+      thead.appendChild(trHead);
+      tabela.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+
+      dadosPreview.forEach(row => {
+        const tr = document.createElement("tr");
+
+        colunasSelecionadas.forEach(col => {
+          const td = document.createElement("td");
+          td.textContent = row[col.nome] ?? "";
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+      });
+
+      tabela.appendChild(tbody);
+      atualizarResumoMapeamento();
+    }
+
+    function exportarExcel() {
+      limparMensagens();
+
+      if (!dadosOrigem.length) {
+        mostrarErro("Importe uma planilha antes de exportar.");
+        return;
+      }
+
+      const colunasSelecionadas = colunasModelo
+        .filter(col => mapping[col.nome].selecionada)
+        .map(col => col.nome);
+
+      if (!colunasSelecionadas.length) {
+        mostrarErro("Selecione pelo menos uma coluna para exportar.");
+        return;
+      }
+
+      let nomeArquivo = document.getElementById("outputName").value.trim() || "clientes_organizados.xlsx";
+
+      if (!nomeArquivo.toLowerCase().endsWith(".xlsx")) {
+        nomeArquivo += ".xlsx";
+      }
+
+      const dados = montarDadosOrganizados();
+      const ws = XLSX.utils.json_to_sheet(dados, {
+        header: colunasSelecionadas
+      });
+
+      ws["!cols"] = colunasSelecionadas.map(col => ({
+        wch: Math.max(14, col.length + 4)
+      }));
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Clientes Organizados");
+      XLSX.writeFile(wb, nomeArquivo);
+    }
+  </script>
+</body>
+</html>
